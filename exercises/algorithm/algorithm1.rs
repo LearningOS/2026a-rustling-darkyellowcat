@@ -2,7 +2,6 @@
 	single linked list merge
 	This problem requires you to merge two ordered singly linked lists into one ordered singly linked list
 */
-// I AM NOT DONE
 
 use std::fmt::{self, Display, Formatter};
 use std::ptr::NonNull;
@@ -69,15 +68,57 @@ impl<T> LinkedList<T> {
             },
         }
     }
-	pub fn merge(list_a:LinkedList<T>,list_b:LinkedList<T>) -> Self
-	{
-		//TODO
-		Self {
-            length: 0,
-            start: None,
-            end: None,
+
+    pub fn merge(
+        mut list_a: LinkedList<T>,
+        mut list_b: LinkedList<T>,
+    ) -> Self
+    where
+        T: Ord,
+    {
+        let mut merged = Self::new();
+
+        while list_a.start.is_some() || list_b.start.is_some() {
+            // 判断应该取哪个链表的头节点
+            let take_a = match (list_a.start, list_b.start) {
+                (Some(a), Some(b)) => unsafe {
+                    a.as_ref().val <= b.as_ref().val
+                },
+                (Some(_), None) => true,
+                (None, Some(_)) => false,
+                (None, None) => break,
+            };
+
+            // 从对应链表中取出当前节点
+            let node = if take_a {
+                let node = list_a.start.take().unwrap();
+                list_a.start = unsafe { node.as_ref().next };
+                node
+            } else {
+                let node = list_b.start.take().unwrap();
+                list_b.start = unsafe { node.as_ref().next };
+                node
+            };
+
+            // 断开节点原有的 next
+            unsafe {
+                (*node.as_ptr()).next = None;
+            }
+
+            // 将节点连接到结果链表尾部
+            match merged.end {
+                Some(tail) => unsafe {
+                    (*tail.as_ptr()).next = Some(node);
+                },
+                None => merged.start = Some(node),
+            }
+
+            merged.end = Some(node);
+            merged.length += 1;
         }
-	}
+
+        merged
+    }
 }
 
 impl<T> Display for LinkedList<T>
